@@ -39,6 +39,19 @@
     z-index: 10;
   }
   #tooltip .title { font-weight: 600; margin-bottom: 4px; }
+  .lookup { margin-top: 20px; text-align: center; }
+  .lookup label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 8px; }
+  .lookup input {
+    width: 100px;
+    padding: 8px 10px;
+    font-size: 14px;
+    text-align: center;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    color: #f3f4f6;
+  }
+  .lookup input:focus { outline: none; border-color: #38bdf8; }
 </style>
 </head>
 <body>
@@ -48,6 +61,10 @@
   <div id="chart-container">
     <svg id="chart" viewBox="0 0 900 420"></svg>
     <div id="tooltip"></div>
+  </div>
+  <div class="lookup">
+    <label for="link-input">Enter link number</label>
+    <input id="link-input" type="number" inputmode="numeric" min="1" max="30" step="1" placeholder="1-30" />
   </div>
 </div>
 
@@ -157,42 +174,70 @@ svg.appendChild(el("path", { class: "data-line", d: pathD.trim() }));
 const tooltip = document.getElementById("tooltip");
 const container = document.getElementById("chart-container");
 
+function positionTooltip(x, y) {
+  const rect = container.getBoundingClientRect();
+  const scaleX = rect.width / W;
+  const tw = tooltip.offsetWidth;
+  const th = tooltip.offsetHeight;
+  const dotX = x * scaleX;
+  const dotY = y * scaleX;
+
+  let px = dotX + 12;
+  if (px + tw > rect.width) px = dotX - tw - 12;
+  px = Math.max(4, Math.min(px, rect.width - tw - 4));
+
+  let py = dotY - 10;
+  py = Math.max(4, Math.min(py, rect.height - th - 4));
+
+  tooltip.style.left = px + "px";
+  tooltip.style.top = py + "px";
+}
+
+function showTooltip(d) {
+  tooltip.innerHTML =
+    `<div class="title">Link ${d.link}</div>` +
+    `<div>Cumulative: ${d.cumulative.toLocaleString()} XP</div>` +
+    `<div>This link cost: ${d.xp.toLocaleString()} XP</div>` +
+    `<div>% of total (30 links): ${d.percentOfTotal.toFixed(2)}%</div>`;
+  tooltip.style.opacity = "1";
+  positionTooltip(xScale(d.link), yScale(d.cumulative));
+}
+
+function hideTooltip() {
+  tooltip.style.opacity = "0";
+}
+
 data.forEach(d => {
   const x = xScale(d.link);
   const y = yScale(d.cumulative);
   const dot = el("circle", { class: "data-dot", cx: x, cy: y, r: 4 });
 
-  dot.addEventListener("mouseenter", () => {
-    tooltip.innerHTML =
-      `<div class="title">Link ${d.link}</div>` +
-      `<div>Cumulative: ${d.cumulative.toLocaleString()} XP</div>` +
-      `<div>This link cost: ${d.xp.toLocaleString()} XP</div>` +
-      `<div>% of total (30 links): ${d.percentOfTotal.toFixed(2)}%</div>`;
-    tooltip.style.opacity = "1";
-  });
-  dot.addEventListener("mousemove", () => {
-    const rect = container.getBoundingClientRect();
-    const scaleX = rect.width / W;
-    const tw = tooltip.offsetWidth;
-    const th = tooltip.offsetHeight;
-    const dotX = x * scaleX;
-    const dotY = y * scaleX;
-
-    let px = dotX + 12;
-    if (px + tw > rect.width) px = dotX - tw - 12;
-    px = Math.max(4, Math.min(px, rect.width - tw - 4));
-
-    let py = dotY - 10;
-    py = Math.max(4, Math.min(py, rect.height - th - 4));
-
-    tooltip.style.left = px + "px";
-    tooltip.style.top = py + "px";
-  });
-  dot.addEventListener("mouseleave", () => {
-    tooltip.style.opacity = "0";
-  });
+  dot.addEventListener("mouseenter", () => showTooltip(d));
+  dot.addEventListener("mousemove", () => positionTooltip(x, y));
+  dot.addEventListener("mouseleave", hideTooltip);
 
   svg.appendChild(dot);
+});
+
+const linkInput = document.getElementById("link-input");
+linkInput.addEventListener("input", () => {
+  const digitsOnly = linkInput.value.replace(/[^0-9]/g, "");
+  if (digitsOnly !== linkInput.value) linkInput.value = digitsOnly;
+
+  if (digitsOnly === "") {
+    hideTooltip();
+    return;
+  }
+
+  let num = parseInt(digitsOnly, 10);
+  if (num < 1) num = 1;
+  if (num > 30) num = 30;
+  if (String(num) !== digitsOnly) linkInput.value = String(num);
+
+  showTooltip(data[num - 1]);
+});
+linkInput.addEventListener("blur", () => {
+  if (linkInput.value === "") hideTooltip();
 });
 </script>
 </body>
