@@ -30,13 +30,12 @@
     background: #1f2937;
     border: 1px solid #374151;
     border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 13px;
+    padding: 6px 10px;
+    font-size: 12px;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.1s;
-    white-space: normal;
-    max-width: 240px;
+    white-space: nowrap;
     z-index: 10;
   }
   #tooltip .title { font-weight: 600; margin-bottom: 4px; }
@@ -206,9 +205,9 @@ function positionTooltip(x, y) {
 function showTooltip(d) {
   tooltip.innerHTML =
     `<div class="title">Link ${d.link} — ${d.xp.toLocaleString()} XP</div>` +
-    `<div>Cumulative XP: ${d.cumulative.toLocaleString()} XP</div>` +
-    `<div>% of total XP earned towards 30 links: ${d.percentOfTotal.toFixed(2)}%</div>` +
-    `<div>Raw XP Earned out of 30 link total XP: ${d.cumulative.toLocaleString()} / ${TOTAL_XP.toLocaleString()}</div>`;
+    `<div>• Cumulative XP: ${d.cumulative.toLocaleString()} XP</div>` +
+    `<div>• XP % of 30 link XP: ${d.percentOfTotal.toFixed(2)}%</div>` +
+    `<div>• Raw XP of 30 link XP: ${d.cumulative.toLocaleString()} / ${TOTAL_XP.toLocaleString()}</div>`;
   tooltip.style.opacity = "1";
   positionTooltip(xScale(d.link), yScale(d.cumulative));
 }
