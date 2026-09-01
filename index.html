@@ -173,8 +173,18 @@ data.forEach(d => {
   dot.addEventListener("mousemove", () => {
     const rect = container.getBoundingClientRect();
     const scaleX = rect.width / W;
-    const px = (x * scaleX) + 12;
-    const py = (y * scaleX) - 10;
+    const tw = tooltip.offsetWidth;
+    const th = tooltip.offsetHeight;
+    const dotX = x * scaleX;
+    const dotY = y * scaleX;
+
+    let px = dotX + 12;
+    if (px + tw > rect.width) px = dotX - tw - 12;
+    px = Math.max(4, Math.min(px, rect.width - tw - 4));
+
+    let py = dotY - 10;
+    py = Math.max(4, Math.min(py, rect.height - th - 4));
+
     tooltip.style.left = px + "px";
     tooltip.style.top = py + "px";
   });
