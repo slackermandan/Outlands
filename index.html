@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Mastery Chain — Cumulative XP by Link</title>
+<title>Outlands</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -11,234 +11,45 @@
     background: #0f172a;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #f3f4f6;
-    padding: 32px 16px;
+    padding: 48px 16px;
   }
-  .wrap { max-width: 900px; margin: 0 auto; }
-  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
-  p.subtitle { color: #9ca3af; font-size: 14px; margin: 0 0 24px 0; }
-  #chart-container { position: relative; width: 100%; }
-  svg { width: 100%; height: auto; display: block; }
-  .grid-line { stroke: #1f2937; stroke-dasharray: 3 3; }
-  .axis-line { stroke: #374151; }
-  .axis-label { fill: #9ca3af; font-size: 11px; }
-  .axis-title { fill: #9ca3af; font-size: 12px; }
-  .data-line { fill: none; stroke: #38bdf8; stroke-width: 2.5; }
-  .data-dot { fill: #38bdf8; cursor: pointer; }
-  .data-dot:hover { fill: #7dd3fc; }
-  #tooltip {
-    position: absolute;
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px 0; }
+  p.subtitle { color: #9ca3af; font-size: 15px; margin: 0 0 32px 0; }
+  .card {
+    display: block;
     background: #1f2937;
     border: 1px solid #374151;
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 13px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.1s;
-    white-space: nowrap;
-    z-index: 10;
+    border-radius: 10px;
+    padding: 20px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease;
   }
-  #tooltip .title { font-weight: 600; margin-bottom: 4px; }
-  .lookup { margin-top: 20px; text-align: center; }
-  .lookup label { display: block; font-size: 13px; color: #9ca3af; margin-bottom: 8px; }
-  .lookup input {
-    width: 100px;
-    padding: 8px 10px;
+  .card:hover {
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+  }
+  .card-title {
+    color: #38bdf8;
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+  }
+  .card-desc {
+    color: #9ca3af;
     font-size: 14px;
-    text-align: center;
-    background: #1f2937;
-    border: 1px solid #374151;
-    border-radius: 6px;
-    color: #f3f4f6;
+    margin: 0;
   }
-  .lookup input:focus { outline: none; border-color: #38bdf8; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Mastery Chain — Cumulative XP by Link</h1>
-  <p class="subtitle">Total for all 30 links: 116,250,000 XP</p>
-  <div id="chart-container">
-    <svg id="chart" viewBox="0 0 900 420"></svg>
-    <div id="tooltip"></div>
+  <div class="wrap">
+    <h1>Outlands</h1>
+    <p class="subtitle">Content, info, and tools for the Outlands Ultima server</p>
+    <a class="card" href="mastery-chain/">
+      <p class="card-title">Mastery Chain — XP Tracker</p>
+      <p class="card-desc">Cumulative XP by link across all 30 links, with a lookup tool.</p>
+    </a>
   </div>
-  <div class="lookup">
-    <label for="link-input">Enter link number</label>
-    <input id="link-input" type="number" inputmode="numeric" min="1" max="30" step="1" placeholder="1-30" />
-  </div>
-</div>
-
-<script>
-const data = [
-  { link: 1, xp: 250000, cumulative: 250000 },
-  { link: 2, xp: 500000, cumulative: 750000 },
-  { link: 3, xp: 750000, cumulative: 1500000 },
-  { link: 4, xp: 1000000, cumulative: 2500000 },
-  { link: 5, xp: 1250000, cumulative: 3750000 },
-  { link: 6, xp: 1500000, cumulative: 5250000 },
-  { link: 7, xp: 1750000, cumulative: 7000000 },
-  { link: 8, xp: 2000000, cumulative: 9000000 },
-  { link: 9, xp: 2250000, cumulative: 11250000 },
-  { link: 10, xp: 2500000, cumulative: 13750000 },
-  { link: 11, xp: 2750000, cumulative: 16500000 },
-  { link: 12, xp: 3000000, cumulative: 19500000 },
-  { link: 13, xp: 3250000, cumulative: 22750000 },
-  { link: 14, xp: 3500000, cumulative: 26250000 },
-  { link: 15, xp: 3750000, cumulative: 30000000 },
-  { link: 16, xp: 4000000, cumulative: 34000000 },
-  { link: 17, xp: 4250000, cumulative: 38250000 },
-  { link: 18, xp: 4500000, cumulative: 42750000 },
-  { link: 19, xp: 4750000, cumulative: 47500000 },
-  { link: 20, xp: 5000000, cumulative: 52500000 },
-  { link: 21, xp: 5250000, cumulative: 57750000 },
-  { link: 22, xp: 5500000, cumulative: 63250000 },
-  { link: 23, xp: 5750000, cumulative: 69000000 },
-  { link: 24, xp: 6000000, cumulative: 75000000 },
-  { link: 25, xp: 6250000, cumulative: 81250000 },
-  { link: 26, xp: 6500000, cumulative: 87750000 },
-  { link: 27, xp: 6750000, cumulative: 94500000 },
-  { link: 28, xp: 7000000, cumulative: 101500000 },
-  { link: 29, xp: 7250000, cumulative: 108750000 },
-  { link: 30, xp: 7500000, cumulative: 116250000 },
-];
-
-const TOTAL_XP = 116250000;
-data.forEach(d => { d.percentOfTotal = (d.cumulative / TOTAL_XP) * 100; });
-
-function formatXP(value) {
-  if (value >= 1000000) {
-    const millions = value / 1000000;
-    return (millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(2)) + "m";
-  }
-  if (value >= 1000) return (value / 1000).toFixed(0) + "k";
-  return String(value);
-}
-
-const W = 900, H = 420;
-const marginLeft = 60, marginRight = 20, marginTop = 20, marginBottom = 50;
-const plotW = W - marginLeft - marginRight;
-const plotH = H - marginTop - marginBottom;
-
-const maxCumulative = Math.max(...data.map(d => d.cumulative));
-const yMax = Math.ceil(maxCumulative / 10000000) * 10000000;
-
-function xScale(link) {
-  return marginLeft + ((link - 1) / (data.length - 1)) * plotW;
-}
-function yScale(value) {
-  return marginTop + plotH - (value / yMax) * plotH;
-}
-
-const svgNS = "http://www.w3.org/2000/svg";
-const svg = document.getElementById("chart");
-svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-
-function el(tag, attrs) {
-  const e = document.createElementNS(svgNS, tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
-  return e;
-}
-
-const ySteps = 5;
-for (let i = 0; i <= ySteps; i++) {
-  const value = (yMax / ySteps) * i;
-  const y = yScale(value);
-  svg.appendChild(el("line", { class: "grid-line", x1: marginLeft, x2: W - marginRight, y1: y, y2: y }));
-  const label = el("text", { class: "axis-label", x: marginLeft - 8, y: y + 4, "text-anchor": "end" });
-  label.textContent = formatXP(value);
-  svg.appendChild(label);
-}
-
-svg.appendChild(el("line", { class: "axis-line", x1: marginLeft, x2: W - marginRight, y1: marginTop + plotH, y2: marginTop + plotH }));
-svg.appendChild(el("line", { class: "axis-line", x1: marginLeft, x2: marginLeft, y1: marginTop, y2: marginTop + plotH }));
-
-data.forEach(d => {
-  const x = xScale(d.link);
-  const label = el("text", { class: "axis-label", x: x, y: marginTop + plotH + 16, "text-anchor": "middle" });
-  label.textContent = d.link;
-  svg.appendChild(label);
-});
-
-const xTitle = el("text", { class: "axis-title", x: marginLeft + plotW / 2, y: H - 8, "text-anchor": "middle" });
-xTitle.textContent = "Link #";
-svg.appendChild(xTitle);
-
-let pathD = "";
-data.forEach((d, i) => {
-  const x = xScale(d.link);
-  const y = yScale(d.cumulative);
-  pathD += (i === 0 ? "M" : "L") + x + "," + y + " ";
-});
-svg.appendChild(el("path", { class: "data-line", d: pathD.trim() }));
-
-const tooltip = document.getElementById("tooltip");
-const container = document.getElementById("chart-container");
-
-function positionTooltip(x, y) {
-  const rect = container.getBoundingClientRect();
-  const scaleX = rect.width / W;
-  const tw = tooltip.offsetWidth;
-  const th = tooltip.offsetHeight;
-  const dotX = x * scaleX;
-  const dotY = y * scaleX;
-
-  let px = dotX + 12;
-  if (px + tw > rect.width) px = dotX - tw - 12;
-  px = Math.max(4, Math.min(px, rect.width - tw - 4));
-
-  let py = dotY - 10;
-  py = Math.max(4, Math.min(py, rect.height - th - 4));
-
-  tooltip.style.left = px + "px";
-  tooltip.style.top = py + "px";
-}
-
-function showTooltip(d) {
-  tooltip.innerHTML =
-    `<div class="title">Link ${d.link}</div>` +
-    `<div>Cumulative: ${d.cumulative.toLocaleString()} XP</div>` +
-    `<div>This link cost: ${d.xp.toLocaleString()} XP</div>` +
-    `<div>% of total (30 links): ${d.percentOfTotal.toFixed(2)}%</div>`;
-  tooltip.style.opacity = "1";
-  positionTooltip(xScale(d.link), yScale(d.cumulative));
-}
-
-function hideTooltip() {
-  tooltip.style.opacity = "0";
-}
-
-data.forEach(d => {
-  const x = xScale(d.link);
-  const y = yScale(d.cumulative);
-  const dot = el("circle", { class: "data-dot", cx: x, cy: y, r: 4 });
-
-  dot.addEventListener("mouseenter", () => showTooltip(d));
-  dot.addEventListener("mousemove", () => positionTooltip(x, y));
-  dot.addEventListener("mouseleave", hideTooltip);
-
-  svg.appendChild(dot);
-});
-
-const linkInput = document.getElementById("link-input");
-linkInput.addEventListener("input", () => {
-  const digitsOnly = linkInput.value.replace(/[^0-9]/g, "");
-  if (digitsOnly !== linkInput.value) linkInput.value = digitsOnly;
-
-  if (digitsOnly === "") {
-    hideTooltip();
-    return;
-  }
-
-  let num = parseInt(digitsOnly, 10);
-  if (num < 1) num = 1;
-  if (num > 30) num = 30;
-  if (String(num) !== digitsOnly) linkInput.value = String(num);
-
-  showTooltip(data[num - 1]);
-});
-linkInput.addEventListener("blur", () => {
-  if (linkInput.value === "") hideTooltip();
-});
-</script>
 </body>
 </html>
