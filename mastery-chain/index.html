@@ -206,8 +206,8 @@ function showTooltip(d) {
   tooltip.innerHTML =
     `<div class="title">Link ${d.link} — ${d.xp.toLocaleString()} XP</div>` +
     `<div>• Cumulative XP: ${d.cumulative.toLocaleString()} XP</div>` +
-    `<div>• XP % of 30 link XP: ${d.percentOfTotal.toFixed(2)}%</div>` +
-    `<div>• Raw XP of 30 link XP: ${d.cumulative.toLocaleString()} / ${TOTAL_XP.toLocaleString()}</div>`;
+    `<div>• % of 30 link XP: ${d.percentOfTotal.toFixed(2)}%</div>` +
+    `<div>• Raw XP of 30: ${d.cumulative.toLocaleString()} / ${TOTAL_XP.toLocaleString()}</div>`;
   tooltip.style.opacity = "1";
   positionTooltip(xScale(d.link), yScale(d.cumulative));
 }
