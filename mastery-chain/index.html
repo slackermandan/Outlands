@@ -35,7 +35,8 @@
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.1s;
-    white-space: nowrap;
+    white-space: normal;
+    max-width: 240px;
     z-index: 10;
   }
   #tooltip .title { font-weight: 600; margin-bottom: 4px; }
@@ -52,6 +53,11 @@
     color: #f3f4f6;
   }
   .lookup input:focus { outline: none; border-color: #38bdf8; }
+  .slider-row { max-width: 320px; margin: 0 auto 20px; }
+  .slider-row input[type="range"] {
+    width: 100%;
+    accent-color: #38bdf8;
+  }
 </style>
 </head>
 <body>
@@ -61,6 +67,10 @@
   <div id="chart-container">
     <svg id="chart" viewBox="0 0 900 420"></svg>
     <div id="tooltip"></div>
+  </div>
+  <div class="slider-row">
+    <label for="link-slider">Link # (1–30)</label>
+    <input id="link-slider" type="range" min="1" max="30" step="1" value="1" />
   </div>
   <div class="lookup">
     <label for="link-input">Enter link number</label>
@@ -195,10 +205,10 @@ function positionTooltip(x, y) {
 
 function showTooltip(d) {
   tooltip.innerHTML =
-    `<div class="title">Link ${d.link}</div>` +
-    `<div>Cumulative: ${d.cumulative.toLocaleString()} XP</div>` +
-    `<div>This link cost: ${d.xp.toLocaleString()} XP</div>` +
-    `<div>% of total (30 links): ${d.percentOfTotal.toFixed(2)}%</div>`;
+    `<div class="title">Link ${d.link} — ${d.xp.toLocaleString()} XP</div>` +
+    `<div>Cumulative XP: ${d.cumulative.toLocaleString()} XP</div>` +
+    `<div>% of total XP earned towards 30 links: ${d.percentOfTotal.toFixed(2)}%</div>` +
+    `<div>Raw XP Earned out of 30 link total XP: ${d.cumulative.toLocaleString()} / ${TOTAL_XP.toLocaleString()}</div>`;
   tooltip.style.opacity = "1";
   positionTooltip(xScale(d.link), yScale(d.cumulative));
 }
@@ -220,24 +230,38 @@ data.forEach(d => {
 });
 
 const linkInput = document.getElementById("link-input");
+const linkSlider = document.getElementById("link-slider");
+
 linkInput.addEventListener("input", () => {
   const digitsOnly = linkInput.value.replace(/[^0-9]/g, "");
   if (digitsOnly !== linkInput.value) linkInput.value = digitsOnly;
+});
 
-  if (digitsOnly === "") {
+linkInput.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+
+  if (linkInput.value === "") {
     hideTooltip();
     return;
   }
 
-  let num = parseInt(digitsOnly, 10);
+  let num = parseInt(linkInput.value, 10);
   if (num < 1) num = 1;
   if (num > 30) num = 30;
-  if (String(num) !== digitsOnly) linkInput.value = String(num);
+  linkInput.value = String(num);
+  linkSlider.value = String(num);
 
   showTooltip(data[num - 1]);
 });
+
 linkInput.addEventListener("blur", () => {
   if (linkInput.value === "") hideTooltip();
+});
+
+linkSlider.addEventListener("input", () => {
+  const num = parseInt(linkSlider.value, 10);
+  linkInput.value = String(num);
+  showTooltip(data[num - 1]);
 });
 </script>
 </body>
