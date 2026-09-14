@@ -53,6 +53,22 @@
   .field input:focus { outline: none; border-color: #38bdf8; }
   .field .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
 
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .checkbox-field input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #38bdf8;
+  }
+  .checkbox-field label {
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
   .error {
     color: #f87171;
     font-size: 13px;
@@ -76,7 +92,7 @@
 
   .results {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     gap: 12px;
   }
   .stat {
@@ -144,6 +160,14 @@
       <label for="target-level">Target level (1–15)</label>
       <input id="target-level" type="number" inputmode="numeric" placeholder="1–15" />
     </div>
+    <div class="checkbox-field">
+      <input id="use-xp-rate" type="checkbox" />
+      <label for="use-xp-rate">Estimate time using my XP per hour</label>
+    </div>
+    <div class="field" id="xp-rate-field" hidden>
+      <label for="xp-rate">XP per hour</label>
+      <input id="xp-rate" type="number" inputmode="numeric" placeholder="e.g. 500" />
+    </div>
     <div class="error" id="error-msg" style="display:none;"></div>
     <button class="btn" id="calculate-btn" type="button">Calculate</button>
   </div>
@@ -162,6 +186,10 @@
       <div class="stat">
         <div class="value" id="distills-needed">—</div>
         <div class="label">Distillations</div>
+      </div>
+      <div class="stat" id="hours-stat" hidden>
+        <div class="value" id="hours-needed">—</div>
+        <div class="label">Hours</div>
       </div>
     </div>
   </div>
@@ -218,16 +246,28 @@ const targetLevelInput = document.getElementById("target-level");
 const currentXpHint = document.getElementById("current-xp-hint");
 const errorMsg = document.getElementById("error-msg");
 const calculateBtn = document.getElementById("calculate-btn");
+const useXpRateCheckbox = document.getElementById("use-xp-rate");
+const xpRateField = document.getElementById("xp-rate-field");
+const xpRateInput = document.getElementById("xp-rate");
 
 const xpNeededEl = document.getElementById("xp-needed");
 const coresNeededEl = document.getElementById("cores-needed");
 const distillsNeededEl = document.getElementById("distills-needed");
+const hoursStat = document.getElementById("hours-stat");
+const hoursNeededEl = document.getElementById("hours-needed");
 
 function showEmptyResults() {
   xpNeededEl.textContent = "—";
   coresNeededEl.textContent = "—";
   distillsNeededEl.textContent = "—";
+  hoursNeededEl.textContent = "—";
 }
+
+useXpRateCheckbox.addEventListener("change", () => {
+  xpRateField.hidden = !useXpRateCheckbox.checked;
+  hoursStat.hidden = !useXpRateCheckbox.checked;
+  if (!useXpRateCheckbox.checked) xpRateInput.value = "";
+});
 
 function showError(msg) {
   errorMsg.textContent = msg;
@@ -288,6 +328,20 @@ function calculate() {
     return;
   }
 
+  let xpRate = null;
+  if (useXpRateCheckbox.checked) {
+    const xrRaw = xpRateInput.value.trim();
+    if (xrRaw === "") {
+      showError("Please enter your XP per hour, or uncheck that option.");
+      return;
+    }
+    xpRate = Number(xrRaw);
+    if (!isFinite(xpRate) || xpRate <= 0) {
+      showError("XP per hour must be a number greater than 0.");
+      return;
+    }
+  }
+
   const xpNeeded = levels[targetLevel].cumulXp - levels[currentLevel].cumulXp - currentXp;
   const coresNeeded = levels[targetLevel].cumulCores - levels[currentLevel].cumulCores;
   const distillsNeeded = levels[targetLevel].cumulDistils - levels[currentLevel].cumulDistils;
@@ -295,11 +349,16 @@ function calculate() {
   xpNeededEl.textContent = xpNeeded.toLocaleString();
   coresNeededEl.textContent = coresNeeded.toLocaleString();
   distillsNeededEl.textContent = distillsNeeded.toLocaleString();
+
+  if (xpRate !== null) {
+    const hoursNeeded = xpNeeded / xpRate;
+    hoursNeededEl.textContent = hoursNeeded.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  }
 }
 
 currentLevelInput.addEventListener("input", updateHint);
 calculateBtn.addEventListener("click", calculate);
-[currentLevelInput, currentXpInput, targetLevelInput].forEach(input => {
+[currentLevelInput, currentXpInput, targetLevelInput, xpRateInput].forEach(input => {
   input.addEventListener("keydown", e => {
     if (e.key === "Enter") calculate();
   });
