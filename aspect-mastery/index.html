@@ -13,7 +13,7 @@
     color: #f3f4f6;
     padding: 32px 16px;
   }
-  .wrap { max-width: 640px; margin: 0 auto; }
+  .wrap { max-width: 720px; margin: 0 auto; }
   h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
   p.subtitle { color: #9ca3af; font-size: 14px; margin: 0 0 24px 0; }
 
@@ -86,6 +86,27 @@
   @media (max-width: 420px) {
     .results { grid-template-columns: 1fr; }
   }
+
+  .table-scroll { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid #374151;
+  }
+  th {
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  tbody tr:hover { background: #111827; }
 </style>
 </head>
 <body>
@@ -128,6 +149,26 @@
       </div>
     </div>
   </div>
+
+  <div class="panel">
+    <h2>Aspect Level Reference Table</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect Level</th>
+            <th>XP</th>
+            <th>Distillations</th>
+            <th>Cores</th>
+            <th>Aspect Triumphs</th>
+            <th>Cumul. Distils</th>
+            <th>Cumul. Cores</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -147,7 +188,7 @@ const levels = [
   { level: 12, xp: 25000,  distillations: 6,  cores: 20, cumulDistils: 31, cumulCores: 78 },
   { level: 13, xp: 40000,  distillations: 8,  cores: 30, cumulDistils: 39, cumulCores: 108 },
   { level: 14, xp: 120000, distillations: 12, cores: 40, cumulDistils: 51, cumulCores: 148 },
-  { level: 15, xp: 250000, distillations: 16, cores: 50, cumulDistils: 67, cumulCores: 198 },
+  { level: 15, xp: 250000, distillations: 16, cores: 50, triumphs: 1, cumulDistils: 67, cumulCores: 198 },
 ];
 
 let cumulXp = 0;
@@ -209,6 +250,22 @@ function recalc() {
 });
 
 recalc();
+
+const tableBody = document.getElementById("table-body");
+levels.forEach(l => {
+  const row = document.createElement("tr");
+  const label = l.level === 0 ? "Unlock" : String(l.level);
+  row.innerHTML = `
+    <td>${label}</td>
+    <td>${l.xp.toLocaleString()}</td>
+    <td>${l.distillations}</td>
+    <td>${l.cores}</td>
+    <td>${l.triumphs || 0}</td>
+    <td>${l.cumulDistils}</td>
+    <td>${l.cumulCores}</td>
+  `;
+  tableBody.appendChild(row);
+});
 </script>
 </body>
 </html>
