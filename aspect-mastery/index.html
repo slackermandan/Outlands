@@ -118,16 +118,16 @@
     <h2>Your Aspect</h2>
     <div class="field">
       <label for="current-level">Current level (0–14)</label>
-      <input id="current-level" type="number" inputmode="numeric" min="0" max="14" value="0" />
+      <input id="current-level" type="number" inputmode="numeric" min="0" max="14" placeholder="0–14" />
     </div>
     <div class="field">
       <label for="current-xp">Current XP toward next level</label>
-      <input id="current-xp" type="number" inputmode="numeric" min="0" value="0" />
+      <input id="current-xp" type="number" inputmode="numeric" min="0" placeholder="Enter current level first" disabled />
       <div class="hint" id="current-xp-hint"></div>
     </div>
     <div class="field">
       <label for="target-level">Target level (1–15)</label>
-      <input id="target-level" type="number" inputmode="numeric" min="1" max="15" value="1" />
+      <input id="target-level" type="number" inputmode="numeric" min="1" max="15" placeholder="1–15" />
     </div>
     <div class="error" id="error-msg" style="display:none;"></div>
   </div>
@@ -207,31 +207,60 @@ const coresNeededEl = document.getElementById("cores-needed");
 const distillsNeededEl = document.getElementById("distills-needed");
 
 function sanitizeInt(input, min, max) {
+  if (input.value.trim() === "") return null;
   let n = parseInt(input.value, 10);
-  if (isNaN(n)) n = min;
+  if (isNaN(n)) {
+    input.value = "";
+    return null;
+  }
   if (n < min) n = min;
   if (n > max) n = max;
   input.value = String(n);
   return n;
 }
 
+function showEmptyResults() {
+  xpNeededEl.textContent = "—";
+  coresNeededEl.textContent = "—";
+  distillsNeededEl.textContent = "—";
+}
+
 function recalc() {
   const currentLevel = sanitizeInt(currentLevelInput, 0, MAX_LEVEL - 1);
 
+  if (currentLevel === null) {
+    currentXpInput.disabled = true;
+    currentXpInput.value = "";
+    currentXpInput.removeAttribute("max");
+    currentXpInput.placeholder = "Enter current level first";
+    currentXpHint.textContent = "";
+    targetLevelInput.min = "1";
+    errorMsg.style.display = "none";
+    showEmptyResults();
+    return;
+  }
+
   const nextLevelXp = levels[currentLevel + 1].xp;
   const maxCurrentXp = nextLevelXp - 1;
+  currentXpInput.disabled = false;
   currentXpInput.max = String(maxCurrentXp);
+  currentXpInput.placeholder = `0–${maxCurrentXp.toLocaleString()}`;
   currentXpHint.textContent = `Max ${maxCurrentXp.toLocaleString()} (XP needed for level ${currentLevel + 1} is ${nextLevelXp.toLocaleString()})`;
   const currentXp = sanitizeInt(currentXpInput, 0, maxCurrentXp);
 
-  const targetLevel = sanitizeInt(targetLevelInput, 1, MAX_LEVEL);
+  targetLevelInput.min = String(currentLevel + 1);
+  const targetLevel = sanitizeInt(targetLevelInput, currentLevel + 1, MAX_LEVEL);
+
+  if (currentXp === null || targetLevel === null) {
+    errorMsg.style.display = "none";
+    showEmptyResults();
+    return;
+  }
 
   if (targetLevel <= currentLevel) {
     errorMsg.textContent = "Target level must be greater than your current level.";
     errorMsg.style.display = "block";
-    xpNeededEl.textContent = "—";
-    coresNeededEl.textContent = "—";
-    distillsNeededEl.textContent = "—";
+    showEmptyResults();
     return;
   }
   errorMsg.style.display = "none";
