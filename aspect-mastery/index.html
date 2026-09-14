@@ -59,6 +59,21 @@
     margin-top: 4px;
   }
 
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-weight: 600;
+    background: #38bdf8;
+    border: none;
+    border-radius: 6px;
+    color: #0f172a;
+    cursor: pointer;
+  }
+  .btn:hover { background: #7dd3fc; }
+
   .results {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -118,18 +133,19 @@
     <h2>Your Aspect</h2>
     <div class="field">
       <label for="current-level">Current level (0–14)</label>
-      <input id="current-level" type="number" inputmode="numeric" min="0" max="14" placeholder="0–14" />
+      <input id="current-level" type="number" inputmode="numeric" placeholder="0–14" />
     </div>
     <div class="field">
       <label for="current-xp">Current XP toward next level</label>
-      <input id="current-xp" type="number" inputmode="numeric" min="0" placeholder="Enter current level first" disabled />
+      <input id="current-xp" type="number" inputmode="numeric" placeholder="e.g. 250" />
       <div class="hint" id="current-xp-hint"></div>
     </div>
     <div class="field">
       <label for="target-level">Target level (1–15)</label>
-      <input id="target-level" type="number" inputmode="numeric" min="1" max="15" placeholder="1–15" />
+      <input id="target-level" type="number" inputmode="numeric" placeholder="1–15" />
     </div>
     <div class="error" id="error-msg" style="display:none;"></div>
+    <button class="btn" id="calculate-btn" type="button">Calculate</button>
   </div>
 
   <div class="panel">
@@ -201,23 +217,11 @@ const currentXpInput = document.getElementById("current-xp");
 const targetLevelInput = document.getElementById("target-level");
 const currentXpHint = document.getElementById("current-xp-hint");
 const errorMsg = document.getElementById("error-msg");
+const calculateBtn = document.getElementById("calculate-btn");
 
 const xpNeededEl = document.getElementById("xp-needed");
 const coresNeededEl = document.getElementById("cores-needed");
 const distillsNeededEl = document.getElementById("distills-needed");
-
-function sanitizeInt(input, min, max) {
-  if (input.value.trim() === "") return null;
-  let n = parseInt(input.value, 10);
-  if (isNaN(n)) {
-    input.value = "";
-    return null;
-  }
-  if (n < min) n = min;
-  if (n > max) n = max;
-  input.value = String(n);
-  return n;
-}
 
 function showEmptyResults() {
   xpNeededEl.textContent = "—";
@@ -225,45 +229,64 @@ function showEmptyResults() {
   distillsNeededEl.textContent = "—";
 }
 
-function recalc() {
-  const currentLevel = sanitizeInt(currentLevelInput, 0, MAX_LEVEL - 1);
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.style.display = "block";
+  showEmptyResults();
+}
 
-  if (currentLevel === null) {
-    currentXpInput.disabled = true;
-    currentXpInput.value = "";
-    currentXpInput.removeAttribute("max");
-    currentXpInput.placeholder = "Enter current level first";
-    currentXpHint.textContent = "";
-    targetLevelInput.min = "1";
-    errorMsg.style.display = "none";
-    showEmptyResults();
+function updateHint() {
+  const raw = currentLevelInput.value.trim();
+  if (/^\d+$/.test(raw)) {
+    const cl = parseInt(raw, 10);
+    if (cl >= 0 && cl <= MAX_LEVEL - 1) {
+      const nextXp = levels[cl + 1].xp;
+      currentXpHint.textContent = `Max ${(nextXp - 1).toLocaleString()} (XP needed for level ${cl + 1} is ${nextXp.toLocaleString()})`;
+      return;
+    }
+  }
+  currentXpHint.textContent = "";
+}
+
+function calculate() {
+  errorMsg.style.display = "none";
+
+  const clRaw = currentLevelInput.value.trim();
+  const cxRaw = currentXpInput.value.trim();
+  const tlRaw = targetLevelInput.value.trim();
+
+  if (clRaw === "" || cxRaw === "" || tlRaw === "") {
+    showError("Please fill in current level, current XP, and target level.");
+    return;
+  }
+  if (!/^\d+$/.test(clRaw) || !/^\d+$/.test(cxRaw) || !/^\d+$/.test(tlRaw)) {
+    showError("Please enter whole numbers only.");
+    return;
+  }
+
+  const currentLevel = parseInt(clRaw, 10);
+  const currentXp = parseInt(cxRaw, 10);
+  const targetLevel = parseInt(tlRaw, 10);
+
+  if (currentLevel < 0 || currentLevel > MAX_LEVEL - 1) {
+    showError(`Current level must be between 0 and ${MAX_LEVEL - 1}.`);
+    return;
+  }
+  if (targetLevel < 1 || targetLevel > MAX_LEVEL) {
+    showError(`Target level must be between 1 and ${MAX_LEVEL}.`);
+    return;
+  }
+  if (targetLevel <= currentLevel) {
+    showError("Target level must be greater than your current level.");
     return;
   }
 
   const nextLevelXp = levels[currentLevel + 1].xp;
   const maxCurrentXp = nextLevelXp - 1;
-  currentXpInput.disabled = false;
-  currentXpInput.max = String(maxCurrentXp);
-  currentXpInput.placeholder = `0–${maxCurrentXp.toLocaleString()}`;
-  currentXpHint.textContent = `Max ${maxCurrentXp.toLocaleString()} (XP needed for level ${currentLevel + 1} is ${nextLevelXp.toLocaleString()})`;
-  const currentXp = sanitizeInt(currentXpInput, 0, maxCurrentXp);
-
-  targetLevelInput.min = String(currentLevel + 1);
-  const targetLevel = sanitizeInt(targetLevelInput, currentLevel + 1, MAX_LEVEL);
-
-  if (currentXp === null || targetLevel === null) {
-    errorMsg.style.display = "none";
-    showEmptyResults();
+  if (currentXp < 0 || currentXp > maxCurrentXp) {
+    showError(`Current XP toward level ${currentLevel + 1} must be between 0 and ${maxCurrentXp.toLocaleString()}.`);
     return;
   }
-
-  if (targetLevel <= currentLevel) {
-    errorMsg.textContent = "Target level must be greater than your current level.";
-    errorMsg.style.display = "block";
-    showEmptyResults();
-    return;
-  }
-  errorMsg.style.display = "none";
 
   const xpNeeded = levels[targetLevel].cumulXp - levels[currentLevel].cumulXp - currentXp;
   const coresNeeded = levels[targetLevel].cumulCores - levels[currentLevel].cumulCores;
@@ -274,11 +297,15 @@ function recalc() {
   distillsNeededEl.textContent = distillsNeeded.toLocaleString();
 }
 
+currentLevelInput.addEventListener("input", updateHint);
+calculateBtn.addEventListener("click", calculate);
 [currentLevelInput, currentXpInput, targetLevelInput].forEach(input => {
-  input.addEventListener("input", recalc);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") calculate();
+  });
 });
 
-recalc();
+showEmptyResults();
 
 const tableBody = document.getElementById("table-body");
 levels.forEach(l => {
