@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aspect Mastery — Level Calculator</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #f3f4f6;
+    padding: 32px 16px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; }
+  p.subtitle { color: #9ca3af; font-size: 14px; margin: 0 0 24px 0; }
+
+  .panel {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .panel + .panel { margin-top: 16px; }
+  .panel h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 16px 0;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    color: #f3f4f6;
+  }
+  .field input:focus { outline: none; border-color: #38bdf8; }
+  .field .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .checkbox-field input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #38bdf8;
+  }
+  .checkbox-field label {
+    font-size: 13px;
+    color: #9ca3af;
+  }
+
+  .error {
+    color: #f87171;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-weight: 600;
+    background: #38bdf8;
+    border: none;
+    border-radius: 6px;
+    color: #0f172a;
+    cursor: pointer;
+  }
+  .btn:hover { background: #7dd3fc; }
+
+  .results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+  }
+  .stat {
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .stat .value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #38bdf8;
+    margin-bottom: 4px;
+    word-break: break-word;
+  }
+  .stat .label {
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  @media (max-width: 420px) {
+    .results { grid-template-columns: 1fr; }
+  }
+
+  .table-scroll { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid #374151;
+  }
+  th {
+    color: #9ca3af;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  tbody tr:hover { background: #111827; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Aspect Mastery</h1>
+  <p class="subtitle">Figure out what it takes to reach a target aspect level from where you're at.</p>
+
+  <div class="panel">
+    <h2>Your Aspect</h2>
+    <div class="field">
+      <label for="current-level">Current level (0–14)</label>
+      <input id="current-level" type="number" inputmode="numeric" placeholder="0–14" />
+    </div>
+    <div class="field">
+      <label for="current-xp">Current XP toward next level</label>
+      <input id="current-xp" type="number" inputmode="numeric" placeholder="e.g. 250" />
+      <div class="hint" id="current-xp-hint"></div>
+    </div>
+    <div class="field">
+      <label for="target-level">Target level (1–15)</label>
+      <input id="target-level" type="number" inputmode="numeric" placeholder="1–15" />
+    </div>
+    <div class="checkbox-field">
+      <input id="use-xp-rate" type="checkbox" />
+      <label for="use-xp-rate">Estimate time using my XP per hour</label>
+    </div>
+    <div class="field" id="xp-rate-field" hidden>
+      <label for="xp-rate">XP per hour</label>
+      <input id="xp-rate" type="number" inputmode="numeric" placeholder="e.g. 500" />
+    </div>
+    <div class="error" id="error-msg" style="display:none;"></div>
+    <button class="btn" id="calculate-btn" type="button">Calculate</button>
+  </div>
+
+  <div class="panel">
+    <h2>Needed to Reach Target</h2>
+    <div class="results">
+      <div class="stat">
+        <div class="value" id="xp-needed">—</div>
+        <div class="label">XP</div>
+      </div>
+      <div class="stat">
+        <div class="value" id="cores-needed">—</div>
+        <div class="label">Cores</div>
+      </div>
+      <div class="stat">
+        <div class="value" id="distills-needed">—</div>
+        <div class="label">Distillations</div>
+      </div>
+      <div class="stat" id="hours-stat" hidden>
+        <div class="value" id="hours-needed">—</div>
+        <div class="label">Hours</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Aspect Level Reference Table</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect Level</th>
+            <th>XP</th>
+            <th>Distillations</th>
+            <th>Cores</th>
+            <th>Aspect Triumphs</th>
+            <th>Cumul. Distils</th>
+            <th>Cumul. Cores</th>
+            <th>Cumul. XP</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const levels = [
+  { level: 0,  xp: 0,      distillations: 2,  cores: 4,  cumulDistils: 2,  cumulCores: 4 },
+  { level: 1,  xp: 500,    distillations: 1,  cores: 2,  cumulDistils: 3,  cumulCores: 6 },
+  { level: 2,  xp: 1000,   distillations: 1,  cores: 2,  cumulDistils: 4,  cumulCores: 8 },
+  { level: 3,  xp: 1500,   distillations: 1,  cores: 2,  cumulDistils: 5,  cumulCores: 10 },
+  { level: 4,  xp: 2000,   distillations: 1,  cores: 2,  cumulDistils: 6,  cumulCores: 12 },
+  { level: 5,  xp: 2500,   distillations: 1,  cores: 2,  cumulDistils: 7,  cumulCores: 14 },
+  { level: 6,  xp: 3000,   distillations: 2,  cores: 3,  cumulDistils: 9,  cumulCores: 17 },
+  { level: 7,  xp: 3500,   distillations: 2,  cores: 4,  cumulDistils: 11, cumulCores: 21 },
+  { level: 8,  xp: 4000,   distillations: 2,  cores: 5,  cumulDistils: 13, cumulCores: 26 },
+  { level: 9,  xp: 4500,   distillations: 3,  cores: 7,  cumulDistils: 16, cumulCores: 33 },
+  { level: 10, xp: 5000,   distillations: 4,  cores: 10, cumulDistils: 20, cumulCores: 43 },
+  { level: 11, xp: 15000,  distillations: 5,  cores: 15, cumulDistils: 25, cumulCores: 58 },
+  { level: 12, xp: 25000,  distillations: 6,  cores: 20, cumulDistils: 31, cumulCores: 78 },
+  { level: 13, xp: 40000,  distillations: 8,  cores: 30, cumulDistils: 39, cumulCores: 108 },
+  { level: 14, xp: 120000, distillations: 12, cores: 40, cumulDistils: 51, cumulCores: 148 },
+  { level: 15, xp: 250000, distillations: 16, cores: 50, triumphs: 1, cumulDistils: 67, cumulCores: 198 },
+];
+
+let cumulXp = 0;
+levels.forEach(l => { cumulXp += l.xp; l.cumulXp = cumulXp; });
+
+const MAX_LEVEL = 15;
+
+const currentLevelInput = document.getElementById("current-level");
+const currentXpInput = document.getElementById("current-xp");
+const targetLevelInput = document.getElementById("target-level");
+const currentXpHint = document.getElementById("current-xp-hint");
+const errorMsg = document.getElementById("error-msg");
+const calculateBtn = document.getElementById("calculate-btn");
+const useXpRateCheckbox = document.getElementById("use-xp-rate");
+const xpRateField = document.getElementById("xp-rate-field");
+const xpRateInput = document.getElementById("xp-rate");
+
+const xpNeededEl = document.getElementById("xp-needed");
+const coresNeededEl = document.getElementById("cores-needed");
+const distillsNeededEl = document.getElementById("distills-needed");
+const hoursStat = document.getElementById("hours-stat");
+const hoursNeededEl = document.getElementById("hours-needed");
+
+function showEmptyResults() {
+  xpNeededEl.textContent = "—";
+  coresNeededEl.textContent = "—";
+  distillsNeededEl.textContent = "—";
+  hoursNeededEl.textContent = "—";
+}
+
+useXpRateCheckbox.addEventListener("change", () => {
+  xpRateField.hidden = !useXpRateCheckbox.checked;
+  hoursStat.hidden = !useXpRateCheckbox.checked;
+  if (!useXpRateCheckbox.checked) xpRateInput.value = "";
+});
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.style.display = "block";
+  showEmptyResults();
+}
+
+function updateHint() {
+  const raw = currentLevelInput.value.trim();
+  if (/^\d+$/.test(raw)) {
+    const cl = parseInt(raw, 10);
+    if (cl >= 0 && cl <= MAX_LEVEL - 1) {
+      const nextXp = levels[cl + 1].xp;
+      currentXpHint.textContent = `Max ${(nextXp - 1).toLocaleString()} (XP needed for level ${cl + 1} is ${nextXp.toLocaleString()})`;
+      return;
+    }
+  }
+  currentXpHint.textContent = "";
+}
+
+function calculate() {
+  errorMsg.style.display = "none";
+
+  const clRaw = currentLevelInput.value.trim();
+  const cxRaw = currentXpInput.value.trim();
+  const tlRaw = targetLevelInput.value.trim();
+
+  if (clRaw === "" || cxRaw === "" || tlRaw === "") {
+    showError("Please fill in current level, current XP, and target level.");
+    return;
+  }
+  if (!/^\d+$/.test(clRaw) || !/^\d+$/.test(cxRaw) || !/^\d+$/.test(tlRaw)) {
+    showError("Please enter whole numbers only.");
+    return;
+  }
+
+  const currentLevel = parseInt(clRaw, 10);
+  const currentXp = parseInt(cxRaw, 10);
+  const targetLevel = parseInt(tlRaw, 10);
+
+  if (currentLevel < 0 || currentLevel > MAX_LEVEL - 1) {
+    showError(`Current level must be between 0 and ${MAX_LEVEL - 1}.`);
+    return;
+  }
+  if (targetLevel < 1 || targetLevel > MAX_LEVEL) {
+    showError(`Target level must be between 1 and ${MAX_LEVEL}.`);
+    return;
+  }
+  if (targetLevel <= currentLevel) {
+    showError("Target level must be greater than your current level.");
+    return;
+  }
+
+  const nextLevelXp = levels[currentLevel + 1].xp;
+  const maxCurrentXp = nextLevelXp - 1;
+  if (currentXp < 0 || currentXp > maxCurrentXp) {
+    showError(`Current XP toward level ${currentLevel + 1} must be between 0 and ${maxCurrentXp.toLocaleString()}.`);
+    return;
+  }
+
+  let xpRate = null;
+  if (useXpRateCheckbox.checked) {
+    const xrRaw = xpRateInput.value.trim();
+    if (xrRaw === "") {
+      showError("Please enter your XP per hour, or uncheck that option.");
+      return;
+    }
+    xpRate = Number(xrRaw);
+    if (!isFinite(xpRate) || xpRate <= 0) {
+      showError("XP per hour must be a number greater than 0.");
+      return;
+    }
+  }
+
+  const xpNeeded = levels[targetLevel].cumulXp - levels[currentLevel].cumulXp - currentXp;
+  const coresNeeded = levels[targetLevel].cumulCores - levels[currentLevel].cumulCores;
+  const distillsNeeded = levels[targetLevel].cumulDistils - levels[currentLevel].cumulDistils;
+
+  xpNeededEl.textContent = xpNeeded.toLocaleString();
+  coresNeededEl.textContent = coresNeeded.toLocaleString();
+  distillsNeededEl.textContent = distillsNeeded.toLocaleString();
+
+  if (xpRate !== null) {
+    const hoursNeeded = xpNeeded / xpRate;
+    hoursNeededEl.textContent = hoursNeeded.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  }
+}
+
+currentLevelInput.addEventListener("input", updateHint);
+calculateBtn.addEventListener("click", calculate);
+[currentLevelInput, currentXpInput, targetLevelInput, xpRateInput].forEach(input => {
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter") calculate();
+  });
+});
+
+showEmptyResults();
+
+const tableBody = document.getElementById("table-body");
+levels.forEach(l => {
+  const row = document.createElement("tr");
+  const label = l.level === 0 ? "Unlock" : String(l.level);
+  row.innerHTML = `
+    <td>${label}</td>
+    <td>${l.xp.toLocaleString()}</td>
+    <td>${l.distillations}</td>
+    <td>${l.cores}</td>
+    <td>${l.triumphs || 0}</td>
+    <td>${l.cumulDistils}</td>
+    <td>${l.cumulCores}</td>
+    <td>${l.cumulXp.toLocaleString()}</td>
+  `;
+  tableBody.appendChild(row);
+});
+</script>
+</body>
+</html>
