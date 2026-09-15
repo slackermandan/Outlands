@@ -207,6 +207,7 @@
             <th>Aspect Triumphs</th>
             <th>Cumul. Distils</th>
             <th>Cumul. Cores</th>
+            <th>Cumul. XP</th>
           </tr>
         </thead>
         <tbody id="table-body"></tbody>
@@ -378,6 +379,7 @@ levels.forEach(l => {
     <td>${l.triumphs || 0}</td>
     <td>${l.cumulDistils}</td>
     <td>${l.cumulCores}</td>
+    <td>${l.cumulXp.toLocaleString()}</td>
   `;
   tableBody.appendChild(row);
 });
